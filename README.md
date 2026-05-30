@@ -6,7 +6,6 @@ A production-grade e-commerce microservices application built to demonstrate a c
 
 ## Table of Contents
 
-- [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Local Development](#local-development)
@@ -16,46 +15,6 @@ A production-grade e-commerce microservices application built to demonstrate a c
 - [Kubernetes & GitOps (Helm + ArgoCD)](#kubernetes--gitops-helm--argocd)
 - [Observability](#observability)
 - [GitHub Actions Secrets](#github-actions-secrets)
-
----
-
-## Architecture
-
-```
-                          ┌─────────────────────────────────────────┐
-                          │            GitHub Actions CI/CD          │
-                          │  lint → test → sonar → trivy → push ECR │
-                          └──────────────────┬──────────────────────┘
-                                             │ updates Helm values
-                                             ▼
-┌──────────┐    HTTPS    ┌──────────────┐        ┌──────────────────────────────────────────────┐
-│  Browser │────────────▶│   Frontend   │        │              AWS (EKS)                        │
-└──────────┘             │  React/Vite  │        │                                              │
-                         │   :80        │        │  ┌─────────┐   ArgoCD watches git repo       │
-                         └──────┬───────┘        │  │ ArgoCD  │──────────────────────────────┐  │
-                                │ /api/*          │  └─────────┘                              │  │
-                                ▼                 │                                           │  │
-                    ┌───────────────────┐         │  ┌─────────────────────────────────────┐ │  │
-                    │   Nginx Gateway   │         │  │           shopflow namespace         │ │  │
-                    │      :8080        │         │  │                                     │ │  │
-                    └──────┬────────────┘         │  │  user-svc  product-svc  order-svc  │ │  │
-                           │                      │  │  :3001     :3002        :3003       │◀┘  │
-          ┌────────────────┼──────────┐           │  │                notification-svc     │    │
-          ▼                ▼          ▼           │  │                :3004               │    │
-   ┌─────────────┐ ┌─────────────┐ ┌──────────┐  │  └──────────────────┬────────────────┘    │
-   │ user-service│ │product-svc  │ │order-svc │  │                     │                     │
-   │   :3001     │ │   :3002     │ │  :3003   │  │  ┌──────────────────▼────────────────┐    │
-   └──────┬──────┘ └──────┬──────┘ └────┬─────┘  │  │  RDS PostgreSQL (private subnet)  │    │
-          └───────────────┴─────────────┘         │  └──────────────────────────────────┘    │
-                          │                       │                                            │
-                          ▼                       │  ┌─────────────────────────────────────┐  │
-               ┌─────────────────────┐            │  │  Observability (monitoring ns)      │  │
-               │  PostgreSQL :5432   │            │  │  Prometheus · Grafana · AlertMgr    │  │
-               └─────────────────────┘            │  │  Jaeger · OpenTelemetry Collector   │  │
-                  (docker-compose only)            │  │  Elasticsearch · Fluentd · Kibana   │  │
-                                                  │  └─────────────────────────────────────┘  │
-                                                  └──────────────────────────────────────────┘
-```
 
 ---
 

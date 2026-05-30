@@ -1,0 +1,192 @@
+name: Reusable Service CI
+
+on:
+  workflow_call:
+    inputs:
+      service-name:
+        description: "Service name (e.g. user-service)"
+        required: true
+        type: string
+      service-dir:
+        description: "Path to service directory (e.g. services/user-service)"
+        required: true
+        type: string
+      ecr-repository:
+        description: "ECR repository name (e.g. shopflow/user-service)"
+        required: true
+        type: string
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_ACCOUNT_ID:
+        required: true
+      SONAR_TOKEN:
+        required: true
+      SONAR_HOST_URL:
+        required: true
+      GH_PAT:
+        required: true
+
+env:
+  AWS_REGION: us-east-1
+  NODE_VERSION: "20"
+
+jobs:
+  # ── Job 1: Lint & Test ─────────────────────────────────────────────────────
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.service-dir }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ${{ inputs.service-dir }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run tests with coverage
+        run: npm test -- --coverage --coverageReporters=lcov
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ inputs.service-name }}
+          path: ${{ inputs.service-dir }}/coverage/lcov.info
+          retention-days: 1
+
+  # ── Job 2: SonarQube Analysis ──────────────────────────────────────────────
+  sonarqube:
+    name: SonarQube Scan
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-${{ inputs.service-name }}
+          path: ${{ inputs.service-dir }}/coverage
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          projectBaseDir: ${{ inputs.service-dir }}
+
+      - name: SonarQube Quality Gate check
+        uses: SonarSource/sonarqube-quality-gate-action@master
+        timeout-minutes: 5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  # ── Job 3: Build, Trivy Scan & Push to ECR ────────────────────────────────
+  build-scan-push:
+    name: Build → Trivy Scan → Push
+    runs-on: ubuntu-latest
+    needs: sonarqube
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      image-tag: ${{ github.sha }}
+      image-uri: ${{ steps.set-image.outputs.uri }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image URI
+        id: set-image
+        run: |
+          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ inputs.ecr-repository }}"
+          echo "uri=${IMAGE_URI}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ steps.set-image.outputs.uri }}:${{ github.sha }} \
+            -t ${{ steps.set-image.outputs.uri }}:latest \
+            ${{ inputs.service-dir }}
+
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.set-image.outputs.uri }}:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+          output: trivy-report.txt
+
+      - name: Upload Trivy report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-report-${{ inputs.service-name }}
+          path: trivy-report.txt
+
+      - name: Push image to ECR
+        run: |
+          docker push ${{ steps.set-image.outputs.uri }}:${{ github.sha }}
+          docker push ${{ steps.set-image.outputs.uri }}:latest
+
+  # ── Job 4: Update Helm values (triggers ArgoCD sync) ──────────────────────
+  update-helm:
+    name: Update Helm Image Tag
+    runs-on: ubuntu-latest
+    needs: build-scan-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Update image tag in dev values
+        run: |
+          sed -i "s|^  tag:.*|  tag: \"${{ github.sha }}\"|" \
+            helm/charts/${{ inputs.service-name }}/values-dev.yaml
+
+      - name: Commit and push updated Helm values
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add helm/charts/${{ inputs.service-name }}/values-dev.yaml
+          git diff --staged --quiet || git commit \
+            -m "ci(helm): update ${{ inputs.service-name }} image tag to ${{ github.sha }} [skip ci]"
+          git push

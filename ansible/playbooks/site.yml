@@ -1,0 +1,5 @@
+---
+# Master playbook — provisions all CI servers
+# Usage: ansible-playbook playbooks/site.yml
+
+- import_playbook: sonarqube.yml

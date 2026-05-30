@@ -1,0 +1,7 @@
+---
+# Copy this file to vault.yml and encrypt it:
+#   ansible-vault encrypt ansible/group_vars/vault.yml
+#
+# vault.yml is gitignored — never commit it unencrypted.
+
+vault_sonarqube_db_password: "change-me-strong-password"

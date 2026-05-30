@@ -1,0 +1,14 @@
+---
+- name: reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: restart sonarqube
+  service:
+    name: sonarqube
+    state: restarted
+
+- name: restart postgresql
+  service:
+    name: postgresql
+    state: restarted

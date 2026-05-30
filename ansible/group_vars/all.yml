@@ -1,0 +1,29 @@
+---
+timezone: UTC
+aws_region: us-east-1
+project: shopflow
+
+common_packages:
+  - git
+  - curl
+  - wget
+  - vim
+  - unzip
+  - htop
+  - net-tools
+  - software-properties-common
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - python3-pip
+  - awscli
+  - jq
+
+sysctl_params:
+  - { key: "vm.max_map_count",     value: "262144" }
+  - { key: "fs.file-max",          value: "65536"  }
+  - { key: "net.core.somaxconn",   value: "65535"  }
+  - { key: "vm.swappiness",        value: "10"     }
+
+swap_size_mb: 2048

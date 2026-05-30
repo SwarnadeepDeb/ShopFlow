@@ -1,0 +1,41 @@
+---
+# Provisions the SonarQube code analysis server
+# Usage: ansible-playbook playbooks/sonarqube.yml
+# Usage (static): ansible-playbook playbooks/sonarqube.yml -i inventory/hosts.ini
+
+- name: Provision SonarQube server
+  hosts: role_sonarqube
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Verify host is reachable
+      ping:
+
+    - name: Validate minimum RAM (SonarQube requires 2GB+)
+      assert:
+        that: ansible_memtotal_mb >= 2048
+        fail_msg: "Host has {{ ansible_memtotal_mb }}MB RAM. SonarQube requires at least 2048MB."
+
+    - name: Print target host info
+      debug:
+        msg: "Provisioning SonarQube {{ sonarqube_version }} on {{ inventory_hostname }} ({{ ansible_host }})"
+
+  roles:
+    - common
+    - sonarqube
+
+  post_tasks:
+    - name: Verify SonarQube API is responding
+      uri:
+        url: "http://localhost:{{ sonarqube_port }}/api/system/status"
+        status_code: 200
+        return_content: yes
+      register: sq_status
+
+    - name: SonarQube provision complete
+      debug:
+        msg: >
+          SonarQube is UP (status={{ sq_status.json.status }})
+          Access at http://{{ ansible_host }}:{{ sonarqube_port }}
+          Default credentials: admin / admin (change on first login)

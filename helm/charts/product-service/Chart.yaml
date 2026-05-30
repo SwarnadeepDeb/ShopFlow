@@ -1,0 +1,12 @@
+apiVersion: v2
+name: product-service
+description: ShopFlow Product Service — product catalog and inventory
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - shopflow
+  - microservice
+  - nodejs
+maintainers:
+  - name: shopflow-team

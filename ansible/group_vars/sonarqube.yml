@@ -1,0 +1,13 @@
+---
+sonarqube_version: "10.3.0.82913"
+sonarqube_port: 9000
+sonarqube_home: /opt/sonarqube
+sonarqube_user: sonarqube
+sonarqube_group: sonarqube
+java_package: openjdk-17-jdk
+
+sonarqube_db_name: sonarqube
+sonarqube_db_user: sonarqube
+sonarqube_db_password: "{{ vault_sonarqube_db_password }}"
+
+postgres_version: "15"

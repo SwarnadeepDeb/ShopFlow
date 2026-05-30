@@ -1,0 +1,22 @@
+name: CI — User Service
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "services/user-service/**"
+      - ".github/workflows/ci-user-service.yml"
+      - ".github/workflows/reusable-service-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "services/user-service/**"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/reusable-service-ci.yml
+    with:
+      service-name: user-service
+      service-dir: services/user-service
+      ecr-repository: shopflow/user-service
+    secrets: inherit

@@ -1,0 +1,22 @@
+# ── Database ────────────────────────────────────────────────────────────────
+sonar.jdbc.url=jdbc:postgresql://localhost:5432/{{ sonarqube_db_name }}
+sonar.jdbc.username={{ sonarqube_db_user }}
+sonar.jdbc.password={{ sonarqube_db_password }}
+
+# ── Web server ───────────────────────────────────────────────────────────────
+sonar.web.host=0.0.0.0
+sonar.web.port={{ sonarqube_port }}
+sonar.web.context=/
+
+# ── Search (Elasticsearch) ───────────────────────────────────────────────────
+sonar.search.javaAdditionalOpts=-Dnode.store.allow_mmap=false
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+sonar.path.data={{ sonarqube_home }}/data
+sonar.path.temp={{ sonarqube_home }}/temp
+sonar.path.logs={{ sonarqube_home }}/logs
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+sonar.log.level=INFO
+sonar.log.rollingPolicy=time:yyyy-MM-dd
+sonar.log.maxFiles=7

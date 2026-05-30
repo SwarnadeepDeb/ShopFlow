@@ -1,0 +1,144 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: shopflow-service-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    ## ── Error Rate ──────────────────────────────────────────────────────────
+    - name: shopflow.error_rate
+      interval: 30s
+      rules:
+        - alert: HighErrorRate
+          expr: |
+            (
+              sum(rate(http_requests_total{namespace="shopflow", status=~"5.."}[5m])) by (service)
+              /
+              sum(rate(http_requests_total{namespace="shopflow"}[5m])) by (service)
+            ) > 0.05
+          for: 2m
+          labels:
+            severity: warning
+            team: shopflow
+          annotations:
+            summary: "High error rate on {{ $labels.service }}"
+            description: "{{ $labels.service }} error rate is {{ $value | humanizePercentage }} (threshold: 5%) over the last 5 minutes."
+
+        - alert: CriticalErrorRate
+          expr: |
+            (
+              sum(rate(http_requests_total{namespace="shopflow", status=~"5.."}[5m])) by (service)
+              /
+              sum(rate(http_requests_total{namespace="shopflow"}[5m])) by (service)
+            ) > 0.20
+          for: 1m
+          labels:
+            severity: critical
+            team: shopflow
+          annotations:
+            summary: "CRITICAL error rate on {{ $labels.service }}"
+            description: "{{ $labels.service }} error rate is {{ $value | humanizePercentage }} (threshold: 20%) over the last 5 minutes."
+
+    ## ── Latency ─────────────────────────────────────────────────────────────
+    - name: shopflow.latency
+      interval: 30s
+      rules:
+        - alert: HighP95Latency
+          expr: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket{namespace="shopflow"}[5m])) by (le, service)
+            ) > 1.0
+          for: 5m
+          labels:
+            severity: warning
+            team: shopflow
+          annotations:
+            summary: "High P95 latency on {{ $labels.service }}"
+            description: "{{ $labels.service }} P95 latency is {{ $value | humanizeDuration }} (threshold: 1s) over 5 minutes."
+
+        - alert: CriticalP99Latency
+          expr: |
+            histogram_quantile(0.99,
+              sum(rate(http_request_duration_seconds_bucket{namespace="shopflow"}[5m])) by (le, service)
+            ) > 3.0
+          for: 2m
+          labels:
+            severity: critical
+            team: shopflow
+          annotations:
+            summary: "CRITICAL P99 latency on {{ $labels.service }}"
+            description: "{{ $labels.service }} P99 latency is {{ $value | humanizeDuration }} (threshold: 3s) over 2 minutes."
+
+    ## ── Availability ────────────────────────────────────────────────────────
+    - name: shopflow.availability
+      rules:
+        - alert: ServiceDown
+          expr: |
+            up{namespace="shopflow"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: shopflow
+          annotations:
+            summary: "Service {{ $labels.service }} is down"
+            description: "Prometheus cannot scrape {{ $labels.pod }} in namespace {{ $labels.namespace }}."
+
+        - alert: PodNotReady
+          expr: |
+            sum by (namespace, pod) (
+              kube_pod_status_ready{namespace="shopflow", condition="true"}
+            ) == 0
+          for: 5m
+          labels:
+            severity: warning
+            team: shopflow
+          annotations:
+            summary: "Pod {{ $labels.pod }} is not ready"
+            description: "Pod {{ $labels.pod }} in {{ $labels.namespace }} has not been ready for 5 minutes."
+
+        - alert: DeploymentReplicasMismatch
+          expr: |
+            (
+              kube_deployment_spec_replicas{namespace="shopflow"}
+              !=
+              kube_deployment_status_available_replicas{namespace="shopflow"}
+            )
+          for: 10m
+          labels:
+            severity: warning
+            team: shopflow
+          annotations:
+            summary: "Deployment {{ $labels.deployment }} replica mismatch"
+            description: "Deployment {{ $labels.deployment }} has {{ $value }} available replicas vs desired."
+
+    ## ── Throughput ──────────────────────────────────────────────────────────
+    - name: shopflow.throughput
+      rules:
+        - alert: LowRequestRate
+          expr: |
+            sum(rate(http_requests_total{namespace="shopflow"}[5m])) by (service) < 0.1
+          for: 15m
+          labels:
+            severity: warning
+            team: shopflow
+          annotations:
+            summary: "Low request rate for {{ $labels.service }}"
+            description: "{{ $labels.service }} is receiving very few requests ({{ $value | humanize }} req/s). Possible issue upstream."
+
+    ## ── HPA ─────────────────────────────────────────────────────────────────
+    - name: shopflow.hpa
+      rules:
+        - alert: HPAMaxReplicasReached
+          expr: |
+            kube_horizontalpodautoscaler_status_current_replicas{namespace="shopflow"}
+            ==
+            kube_horizontalpodautoscaler_spec_max_replicas{namespace="shopflow"}
+          for: 5m
+          labels:
+            severity: warning
+            team: shopflow
+          annotations:
+            summary: "HPA {{ $labels.horizontalpodautoscaler }} at max replicas"
+            description: "{{ $labels.horizontalpodautoscaler }} has been at max replicas for 5m — may need capacity increase."

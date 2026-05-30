@@ -1,0 +1,21 @@
+[Unit]
+Description=SonarQube Code Quality Server
+Documentation=https://docs.sonarqube.org
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=forking
+ExecStart={{ sonarqube_home }}/bin/linux-x86-64/sonar.sh start
+ExecStop={{ sonarqube_home }}/bin/linux-x86-64/sonar.sh stop
+ExecReload={{ sonarqube_home }}/bin/linux-x86-64/sonar.sh restart
+PIDFile={{ sonarqube_home }}/bin/linux-x86-64/./.SonarQube.pid
+User={{ sonarqube_user }}
+Group={{ sonarqube_group }}
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=131072
+LimitNPROC=8192
+
+[Install]
+WantedBy=multi-user.target

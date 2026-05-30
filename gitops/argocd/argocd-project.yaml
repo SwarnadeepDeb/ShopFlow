@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: shopflow
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: ShopFlow microservices project
+
+  sourceRepos:
+    - "https://github.com/YOUR_ORG/shopflow.git"
+
+  destinations:
+    - namespace: shopflow
+      server: https://kubernetes.default.svc
+    - namespace: argocd
+      server: https://kubernetes.default.svc
+
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  namespaceResourceWhitelist:
+    - group: "apps"
+      kind: Deployment
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Secret
+    - group: ""
+      kind: ServiceAccount
+    - group: "networking.k8s.io"
+      kind: Ingress
+    - group: "autoscaling"
+      kind: HorizontalPodAutoscaler
+
+  roles:
+    - name: developer
+      description: Read-only access for developers
+      policies:
+        - p, proj:shopflow:developer, applications, get, shopflow/*, allow
+        - p, proj:shopflow:developer, applications, sync, shopflow/*, allow
+      groups:
+        - shopflow-developers

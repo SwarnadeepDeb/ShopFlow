@@ -1,0 +1,20 @@
+{{ .Chart.Name }} deployed successfully!
+
+  Namespace : {{ .Release.Namespace }}
+  Release   : {{ .Release.Name }}
+  Image     : {{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+  Service endpoint (within cluster):
+    http://{{ include "chart.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+
+{{- if .Values.ingress.enabled }}
+  Ingress path:
+  {{- range .Values.ingress.hosts }}
+  {{- range .paths }}
+    http://{{ $.Values.ingress.hosts | first | get "host" }}{{ .path }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+
+  Health check:
+    kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ .Chart.Name }}

@@ -1,0 +1,28 @@
+replicaCount: 2
+image:
+  tag: "v1.0.0"
+ingress:
+  enabled: true
+  annotations:
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/certificate-arn: "ACM_CERTIFICATE_ARN"
+  hosts:
+    - host: shopflow.example.com
+      paths:
+        - path: /api/products
+          pathType: Prefix
+config:
+  DB_HOST: "RDS_PROD_ENDPOINT_FROM_TERRAFORM"
+  NODE_ENV: "production"
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi

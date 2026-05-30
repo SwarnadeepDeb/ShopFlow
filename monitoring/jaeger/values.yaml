@@ -1,0 +1,59 @@
+## Jaeger Helm values — dev (all-in-one)
+## https://github.com/jaegertracing/helm-charts/tree/main/charts/jaeger
+
+## Use all-in-one for dev; switch to production (separate components) in prod
+provisionDataStore:
+  cassandra: false
+  elasticsearch: false
+  kafka: false
+
+allInOne:
+  enabled: true
+  image:
+    tag: "1.52.0"
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  args:
+    - "--memory.max-traces=50000"
+    - "--query.base-path=/"
+  env:
+    - name: SPAN_STORAGE_TYPE
+      value: memory
+    - name: COLLECTOR_OTLP_ENABLED
+      value: "true"
+
+## Disable individual components (all-in-one handles everything)
+collector:
+  enabled: false
+
+query:
+  enabled: false
+
+agent:
+  enabled: false
+
+ingester:
+  enabled: false
+
+spark:
+  enabled: false
+
+## Expose query UI
+query:
+  enabled: false  # all-in-one already exposes the UI
+
+## Service configuration for all-in-one
+service:
+  type: ClusterIP
+
+## OTEL ports exposed by all-in-one
+## - 4317 gRPC OTLP
+## - 4318 HTTP OTLP
+## - 16686 Jaeger Query UI
+## - 14268 Jaeger Thrift HTTP
+## - 6831/UDP Jaeger Thrift Compact (agent)

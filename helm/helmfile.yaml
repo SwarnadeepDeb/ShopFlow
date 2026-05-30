@@ -1,0 +1,65 @@
+environments:
+  dev:
+    values:
+      - environments/dev.yaml
+  prod:
+    values:
+      - environments/prod.yaml
+
+---
+releases:
+  - name: user-service
+    namespace: shopflow
+    createNamespace: true
+    chart: ./charts/user-service
+    values:
+      - ./charts/user-service/values.yaml
+      - ./charts/user-service/values-{{ .Environment.Name }}.yaml
+    set:
+      - name: image.tag
+        value: {{ .Values.imageTag }}
+
+  - name: product-service
+    namespace: shopflow
+    chart: ./charts/product-service
+    values:
+      - ./charts/product-service/values.yaml
+      - ./charts/product-service/values-{{ .Environment.Name }}.yaml
+    set:
+      - name: image.tag
+        value: {{ .Values.imageTag }}
+
+  - name: order-service
+    namespace: shopflow
+    chart: ./charts/order-service
+    values:
+      - ./charts/order-service/values.yaml
+      - ./charts/order-service/values-{{ .Environment.Name }}.yaml
+    set:
+      - name: image.tag
+        value: {{ .Values.imageTag }}
+
+  - name: notification-service
+    namespace: shopflow
+    chart: ./charts/notification-service
+    values:
+      - ./charts/notification-service/values.yaml
+      - ./charts/notification-service/values-{{ .Environment.Name }}.yaml
+    set:
+      - name: image.tag
+        value: {{ .Values.imageTag }}
+
+  - name: frontend
+    namespace: shopflow
+    chart: ./charts/frontend
+    values:
+      - ./charts/frontend/values.yaml
+      - ./charts/frontend/values-{{ .Environment.Name }}.yaml
+    set:
+      - name: image.tag
+        value: {{ .Values.imageTag }}
+    needs:
+      - shopflow/user-service
+      - shopflow/product-service
+      - shopflow/order-service
+      - shopflow/notification-service

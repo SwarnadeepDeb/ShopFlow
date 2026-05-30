@@ -1,0 +1,36 @@
+## OpenTelemetry Instrumentation CR — auto-instruments pods with matching annotations
+## Requires opentelemetry-operator to be installed
+## Install: helm upgrade --install opentelemetry-operator open-telemetry/opentelemetry-operator -n tracing
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: shopflow-instrumentation
+  namespace: shopflow
+spec:
+  ## OTLP exporter endpoint — our OTel Collector service
+  exporter:
+    endpoint: http://otel-collector.tracing.svc.cluster.local:4318
+
+  propagators:
+    - tracecontext
+    - baggage
+    - b3
+
+  sampler:
+    type: parentbased_traceidratio
+    argument: "1.0"   ## 100% sampling in dev; drop to 0.1 (10%) in prod
+
+  ## Node.js auto-instrumentation
+  nodejs:
+    image: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-nodejs:0.47.0
+    env:
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://otel-collector.tracing.svc.cluster.local:4318
+      - name: OTEL_TRACES_EXPORTER
+        value: otlp
+      - name: OTEL_METRICS_EXPORTER
+        value: none
+      - name: OTEL_LOGS_EXPORTER
+        value: none
+      - name: NODE_OPTIONS
+        value: "--require /otel-auto-instrumentation-nodejs/autoinstrumentation.js"

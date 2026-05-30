@@ -1,0 +1,40 @@
+## Kibana Helm values — dev
+## https://github.com/elastic/helm-charts/tree/main/charts/kibana
+
+imageTag: "8.11.1"
+
+elasticsearchHosts: "http://elasticsearch-master.logging.svc.cluster.local:9200"
+
+replicas: 1
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+
+## Disable security for dev
+kibanaConfig:
+  kibana.yml: |
+    server.host: "0.0.0.0"
+    elasticsearch.hosts: ["http://elasticsearch-master.logging.svc.cluster.local:9200"]
+    xpack.security.enabled: false
+    xpack.encryptedSavedObjects.encryptionKey: "shopflow-kibana-encryption-key-32c"
+    ## Default index pattern
+    kibana.defaultAppId: "discover"
+    ## Increase timeout for large queries
+    elasticsearch.requestTimeout: 90000
+
+## Health checks
+readinessProbe:
+  failureThreshold: 10
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  successThreshold: 3
+  timeoutSeconds: 5
+
+service:
+  type: ClusterIP
+  port: 5601

@@ -1,0 +1,167 @@
+---
+# ── System prerequisites ────────────────────────────────────────────────────
+
+- name: Install Java 17
+  apt:
+    name: "{{ java_package }}"
+    state: present
+
+- name: Set vm.max_map_count (required by Elasticsearch inside SonarQube)
+  sysctl:
+    name: vm.max_map_count
+    value: "524288"
+    state: present
+    sysctl_set: yes
+    reload: yes
+
+- name: Set fs.file-max
+  sysctl:
+    name: fs.file-max
+    value: "131072"
+    state: present
+    sysctl_set: yes
+    reload: yes
+
+- name: Set hard/soft limits for sonarqube user
+  blockinfile:
+    path: /etc/security/limits.d/sonarqube.conf
+    create: yes
+    block: |
+      sonarqube   -   nofile   131072
+      sonarqube   -   nproc    8192
+
+# ── PostgreSQL ──────────────────────────────────────────────────────────────
+
+- name: Install PostgreSQL
+  apt:
+    name:
+      - "postgresql-{{ postgres_version }}"
+      - python3-psycopg2
+    state: present
+    update_cache: yes
+
+- name: Start and enable PostgreSQL
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Create SonarQube PostgreSQL user
+  become_user: postgres
+  community.postgresql.postgresql_user:
+    name: "{{ sonarqube_db_user }}"
+    password: "{{ sonarqube_db_password }}"
+    role_attr_flags: NOSUPERUSER,NOCREATEDB,NOCREATEROLE
+    state: present
+
+- name: Create SonarQube PostgreSQL database
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    name: "{{ sonarqube_db_name }}"
+    owner: "{{ sonarqube_db_user }}"
+    encoding: UTF8
+    state: present
+
+# ── SonarQube user and directories ─────────────────────────────────────────
+
+- name: Create sonarqube system user
+  user:
+    name: "{{ sonarqube_user }}"
+    system: yes
+    shell: /bin/bash
+    home: "{{ sonarqube_home }}"
+    create_home: no
+
+- name: Create SonarQube install directory
+  file:
+    path: /opt/sonarqube-{{ sonarqube_version }}
+    state: directory
+    owner: "{{ sonarqube_user }}"
+    group: "{{ sonarqube_group }}"
+    mode: '0755'
+
+# ── Download and extract SonarQube ─────────────────────────────────────────
+
+- name: Check if SonarQube is already downloaded
+  stat:
+    path: "/opt/sonarqube-{{ sonarqube_version }}/bin/linux-x86-64/sonar.sh"
+  register: sonar_binary
+
+- name: Download SonarQube archive
+  get_url:
+    url: "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-{{ sonarqube_version }}.zip"
+    dest: "/tmp/sonarqube-{{ sonarqube_version }}.zip"
+    mode: '0644'
+  when: not sonar_binary.stat.exists
+
+- name: Extract SonarQube
+  unarchive:
+    src: "/tmp/sonarqube-{{ sonarqube_version }}.zip"
+    dest: /opt
+    remote_src: yes
+    owner: "{{ sonarqube_user }}"
+    group: "{{ sonarqube_group }}"
+  when: not sonar_binary.stat.exists
+
+- name: Create /opt/sonarqube symlink pointing to versioned dir
+  file:
+    src: "/opt/sonarqube-{{ sonarqube_version }}"
+    dest: "{{ sonarqube_home }}"
+    state: link
+    owner: "{{ sonarqube_user }}"
+    group: "{{ sonarqube_group }}"
+
+- name: Set ownership on SonarQube directory
+  file:
+    path: "{{ sonarqube_home }}"
+    owner: "{{ sonarqube_user }}"
+    group: "{{ sonarqube_group }}"
+    recurse: yes
+
+# ── Configure SonarQube ─────────────────────────────────────────────────────
+
+- name: Deploy sonar.properties
+  template:
+    src: sonar.properties.j2
+    dest: "{{ sonarqube_home }}/conf/sonar.properties"
+    owner: "{{ sonarqube_user }}"
+    group: "{{ sonarqube_group }}"
+    mode: '0640'
+  notify: restart sonarqube
+
+# ── Systemd service ─────────────────────────────────────────────────────────
+
+- name: Deploy SonarQube systemd service
+  template:
+    src: sonarqube.service.j2
+    dest: /etc/systemd/system/sonarqube.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart sonarqube
+
+- name: Enable and start SonarQube
+  service:
+    name: sonarqube
+    state: started
+    enabled: yes
+
+- name: Wait for SonarQube to be ready
+  uri:
+    url: "http://localhost:{{ sonarqube_port }}/api/system/status"
+    status_code: 200
+    return_content: yes
+  register: sonar_status
+  until: sonar_status.json.status == "UP"
+  retries: 30
+  delay: 15
+
+- name: Allow SonarQube port through firewall
+  ufw:
+    rule: allow
+    port: "{{ sonarqube_port }}"
+    proto: tcp
+
+- name: Print SonarQube access info
+  debug:
+    msg: "SonarQube is ready at http://{{ ansible_host }}:{{ sonarqube_port }} (admin/admin — change on first login)"

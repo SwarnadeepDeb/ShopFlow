@@ -1,0 +1,22 @@
+replicaCount: 1
+image:
+  tag: latest
+ingress:
+  enabled: true
+  hosts:
+    - host: dev.shopflow.example.com
+      paths:
+        - path: /api/orders
+          pathType: Prefix
+config:
+  DB_HOST: "RDS_ENDPOINT_FROM_TERRAFORM"
+  NODE_ENV: "development"
+hpa:
+  enabled: false
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi

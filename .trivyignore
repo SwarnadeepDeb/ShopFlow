@@ -1,0 +1,6 @@
+# Trivy CVE ignore list
+# Add CVE IDs here only after reviewing and accepting the risk
+# Format: CVE-YYYY-NNNNN
+
+# Example (remove before production):
+# CVE-2023-XXXXX

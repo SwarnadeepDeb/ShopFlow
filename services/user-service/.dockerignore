@@ -1,0 +1,11 @@
+.env
+.env.*
+node_modules
+npm-debug.log
+dist
+coverage
+tests
+.eslintrc.json
+sonar-project.properties
+*.pem
+*.key

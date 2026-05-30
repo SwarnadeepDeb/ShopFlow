@@ -1,0 +1,22 @@
+name: CI — Notification Service
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "services/notification-service/**"
+      - ".github/workflows/ci-notification-service.yml"
+      - ".github/workflows/reusable-service-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "services/notification-service/**"
+
+jobs:
+  ci:
+    uses: ./.github/workflows/reusable-service-ci.yml
+    with:
+      service-name: notification-service
+      service-dir: services/notification-service
+      ecr-repository: shopflow/notification-service
+    secrets: inherit

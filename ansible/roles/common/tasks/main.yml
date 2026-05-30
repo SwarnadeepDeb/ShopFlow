@@ -1,0 +1,91 @@
+---
+- name: Update apt cache and upgrade packages
+  apt:
+    update_cache: yes
+    upgrade: safe
+    cache_valid_time: 3600
+
+- name: Install common packages
+  apt:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Set system timezone
+  timezone:
+    name: "{{ timezone }}"
+
+- name: Apply sysctl kernel parameters
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_set: yes
+    reload: yes
+  loop: "{{ sysctl_params }}"
+
+- name: Set hard and soft file descriptor limits
+  blockinfile:
+    path: /etc/security/limits.conf
+    block: |
+      * soft nofile 65536
+      * hard nofile 65536
+      * soft nproc  4096
+      * hard nproc  4096
+
+- name: Check if swap file exists
+  stat:
+    path: /swapfile
+  register: swap_file
+
+- name: Create swap file
+  command: "dd if=/dev/zero of=/swapfile bs=1M count={{ swap_size_mb }}"
+  when: not swap_file.stat.exists
+
+- name: Set swap file permissions
+  file:
+    path: /swapfile
+    mode: '0600'
+  when: not swap_file.stat.exists
+
+- name: Format swap file
+  command: mkswap /swapfile
+  when: not swap_file.stat.exists
+
+- name: Enable swap
+  command: swapon /swapfile
+  when: not swap_file.stat.exists
+
+- name: Persist swap in fstab
+  lineinfile:
+    path: /etc/fstab
+    line: '/swapfile none swap sw 0 0'
+    state: present
+
+- name: Harden SSH — disable root login and password auth
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - { regexp: "^#?PermitRootLogin",     line: "PermitRootLogin no" }
+    - { regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication no" }
+    - { regexp: "^#?X11Forwarding",       line: "X11Forwarding no" }
+  notify: restart sshd
+
+- name: Enable UFW and set default deny
+  ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+
+- name: Allow SSH through firewall
+  ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
+- name: Allow outbound traffic
+  ufw:
+    rule: allow
+    direction: out

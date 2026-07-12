@@ -4,6 +4,7 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 FROM node:20-alpine
+RUN apk upgrade --no-cache
 WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY src/ ./src/

@@ -1,6 +1,7 @@
 #!/bin/bash
 # Installs ArgoCD on EKS and configures initial access
 # Run: chmod +x install.sh && ./install.sh
+#
 set -euo pipefail
 
 ARGOCD_VERSION="v2.10.0"

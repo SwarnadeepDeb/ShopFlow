@@ -17,7 +17,7 @@ data "aws_ami" "ubuntu" {
 
 resource "aws_key_pair" "ci" {
   key_name   = "${var.project}-ci-key"
-  public_key = file(var.public_key_path)
+  public_key = file(pathexpand(var.public_key_path))
 
   tags = var.tags
 }

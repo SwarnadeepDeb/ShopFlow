@@ -31,6 +31,26 @@
       sonarqube   -   nproc    8192
 
 # ── PostgreSQL ──────────────────────────────────────────────────────────────
+# Ubuntu's default repos only ship the OS-bundled PostgreSQL major version
+# (14 on jammy); postgresql-15 requires the official PGDG apt repository.
+
+- name: Add PostgreSQL official APT GPG key
+  ansible.builtin.get_url:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    dest: /tmp/postgresql-key.asc
+    mode: '0644'
+
+- name: Dearmor PostgreSQL APT GPG key
+  ansible.builtin.shell: gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg /tmp/postgresql-key.asc
+  args:
+    creates: /usr/share/keyrings/postgresql-keyring.gpg
+
+- name: Add PostgreSQL official APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main"
+    filename: pgdg
+    state: present
+    update_cache: yes
 
 - name: Install PostgreSQL
   apt:
@@ -114,6 +134,7 @@
 - name: Set ownership on SonarQube directory
   file:
     path: "{{ sonarqube_home }}"
+    state: directory
     owner: "{{ sonarqube_user }}"
     group: "{{ sonarqube_group }}"
     recurse: yes
@@ -141,8 +162,9 @@
     - restart sonarqube
 
 - name: Enable and start SonarQube
-  service:
+  ansible.builtin.systemd:
     name: sonarqube
+    daemon_reload: yes
     state: started
     enabled: yes
 
@@ -152,7 +174,7 @@
     status_code: 200
     return_content: yes
   register: sonar_status
-  until: sonar_status.json.status == "UP"
+  until: sonar_status.json is defined and sonar_status.json.status is defined and sonar_status.json.status == "UP"
   retries: 30
   delay: 15
 

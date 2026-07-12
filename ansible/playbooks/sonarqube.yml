@@ -7,6 +7,8 @@
   hosts: role_sonarqube
   become: yes
   gather_facts: yes
+  vars_files:
+    - group_vars/vault.yml
 
   pre_tasks:
     - name: Verify host is reachable
@@ -27,11 +29,18 @@
 
   post_tasks:
     - name: Verify SonarQube API is responding
+      # Handlers (e.g. restart sonarqube, notified when the systemd unit
+      # changes on a fresh install) run before post_tasks and can leave the
+      # service mid-restart here, so this needs the same retry/backoff as
+      # the role's own readiness check rather than a single-shot request.
       uri:
         url: "http://localhost:{{ sonarqube_port }}/api/system/status"
         status_code: 200
         return_content: yes
       register: sq_status
+      until: sq_status.json is defined and sq_status.json.status is defined and sq_status.json.status == "UP"
+      retries: 30
+      delay: 10
 
     - name: SonarQube provision complete
       debug:

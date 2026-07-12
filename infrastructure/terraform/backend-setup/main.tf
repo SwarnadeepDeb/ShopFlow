@@ -9,7 +9,8 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
+  region  = var.aws_region
+  profile = "local"
 }
 
 variable "aws_region" {
@@ -22,10 +23,6 @@ variable "project" {
 
 resource "aws_s3_bucket" "terraform_state" {
   bucket = "${var.project}-terraform-state-${data.aws_caller_identity.current.account_id}"
-
-  lifecycle {
-    prevent_destroy = true
-  }
 
   tags = { Name = "${var.project}-terraform-state", ManagedBy = "terraform" }
 }

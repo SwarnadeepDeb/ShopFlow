@@ -10,6 +10,9 @@ keyed_groups:
   - key: tags.Role
     prefix: role
     separator: "_"
+  - key: tags.Role
+    prefix: ""
+    separator: ""
   - key: tags.Environment
     prefix: env
     separator: "_"

@@ -9,11 +9,20 @@ replicas: 1
 minimumMasterNodes: 1
 
 ## Disable TLS for dev simplicity (enable in prod)
+## createCert defaults to true and force-injects xpack.security.http.ssl.enabled=true
+## (plus cert paths) as container env vars, which override esConfig below entirely
+## regardless of protocol/esConfig — must be disabled explicitly.
 protocol: http
+createCert: false
+## Keep secret.enabled (default) so the chart still generates an
+## ELASTIC_PASSWORD env var — the readiness-probe script unconditionally
+## requires this var to build its health-check request even though
+## xpack.security.enabled: false below means ES itself ignores it.
 esConfig:
   elasticsearch.yml: |
     xpack.security.enabled: false
     xpack.security.transport.ssl.enabled: false
+    xpack.security.http.ssl.enabled: false
     cluster.name: shopflow-logs
     network.host: 0.0.0.0
 
@@ -38,6 +47,10 @@ volumeClaimTemplate:
       storage: 30Gi
 
 ## Health checks
+## A single-node cluster can never reach "green" (no second node to place
+## replica shards on) — the chart's default readiness check waits for green
+## and would fail forever here, so accept "yellow" instead.
+clusterHealthCheckParams: "wait_for_status=yellow&timeout=1s"
 readinessProbe:
   failureThreshold: 10
   initialDelaySeconds: 30

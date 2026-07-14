@@ -56,8 +56,12 @@ helm upgrade --install jaeger jaegertracing/jaeger \
   --wait
 
 echo ""
-echo "==> [4/4] Installing OpenTelemetry Collector"
+echo "==> [4/4] Installing OpenTelemetry Collector + Operator"
 kubectl apply -f jaeger/otel-collector-config.yaml
+helm upgrade --install opentelemetry-operator open-telemetry/opentelemetry-operator \
+  --namespace tracing \
+  --values jaeger/opentelemetry-operator-values.yaml \
+  --wait
 kubectl apply -f jaeger/otel-instrumentation.yaml
 
 echo ""

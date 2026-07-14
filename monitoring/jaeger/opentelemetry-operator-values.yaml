@@ -1,0 +1,20 @@
+## OpenTelemetry Operator Helm values — dev
+## Provides the Instrumentation CRD used by jaeger/otel-instrumentation.yaml
+## https://github.com/open-telemetry/opentelemetry-helm-charts/tree/main/charts/opentelemetry-operator
+
+## No cert-manager installed in this cluster — use Helm's own self-signed
+## cert generation for the admission webhook instead.
+admissionWebhooks:
+  certManager:
+    enabled: false
+  autoGenerateCert:
+    enabled: true
+
+manager:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi

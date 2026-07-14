@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp 'D:/Devops Project/helm/charts/user-service/templates/__TRACKED_VAR__' 'D:/Devops Project/helm/charts/__TRACKED_VAR__/templates/__TRACKED_VAR__')",
+      "Bash(cp 'D:\\\\Devops Project\\\\helm\\\\charts\\\\user-service\\\\templates$tpl' 'D:\\\\Devops Project\\\\helm\\\\charts$svc\\\\templates$tpl')",
+      "Bash(Remove-Item *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Devops Project\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "PowerShell(cd \"D:\\\\Devops Project\"; Get-ChildItem -Path . -Exclude \"node_modules\" -Recurse -File -ErrorAction SilentlyContinue | Where-Object {$_.Name -match '\\\\.\\(yaml|yml|json|tf|tfvars|conf|config|txt|sh|py|js|ts|java|go|env\\)$'} | Select-Object -ExpandProperty FullName | Sort-Object)",
+      "Bash(grep -v \"^D:/Devops Project/helm/charts$\")",
+      "Bash(grep -v \"^D:/Devops Project/ansible/roles$\")",
+      "Bash(Get-ChildItem -Recurse \"D:\\\\Devops Project\\\\monitoring\\\\grafana\")",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Recurse -Force)",
+      "Bash(Format-Table -AutoSize)",
+      "Bash(xargs grep -l \"vault\\\\|secret\\\\|\\\\.env\")",
+      "Skill(artifact-design)",
+      "Artifact",
+      "PowerShell(cd \"D:\\\\Devops Project\"; Get-ChildItem -Recurse -Force | Select-Object FullName, PSIsContainer | ForEach-Object { if \\($_.PSIsContainer\\) { $_.FullName + \" [DIR]\" } else { $_.FullName } })",
+      "PowerShell(cd \"D:\\\\Devops Project\"; Get-ChildItem -Directory | ForEach-Object { \"{0}\" -f $_.Name })",
+      "PowerShell($latest = \\(Invoke-RestMethod \"https://api.github.com/repos/helmfile/helmfile/releases/latest\"\\).tag_name; Write-Output \"Latest version: $latest\")",
+      "PowerShell(ansible-galaxy *)",
+      "PowerShell(wsl --list --verbose 2>&1; wsl --status 2>&1)",
+      "Bash(wsl *)",
+      "PowerShell(Get-Command *)",
+      "Bash(find . -iname \"*.tfstate*\" -o -iname \".terraform\" -type d)",
+      "Bash(find . -iname \".terraform\")",
+      "Bash(ls backend-setup/)",
+      "Bash(ls environments/dev/.terraform)",
+      "Bash(ls environments/prod/.terraform)",
+      "Bash(python3 -c ' *)",
+      "PowerShell(terraform destroy *)",
+      "PowerShell(terraform state *)",
+      "Bash(MSYS_NO_PATHCONV=1 wsl *)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(wsl --shutdown)",
+      "Bash(gh auth *)",
+      "Bash(/mnt/c/nvm4w/nodejs/node.exe --version)"
+    ]
+  }
+}

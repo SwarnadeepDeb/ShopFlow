@@ -189,6 +189,16 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add helm/charts/${{ inputs.service-name }}/values-dev.yaml
-          git diff --staged --quiet || git commit \
-            -m "ci(helm): update ${{ inputs.service-name }} image tag to ${{ github.sha }} [skip ci]"
-          git push
+          git diff --staged --quiet && exit 0
+          git commit -m "ci(helm): update ${{ inputs.service-name }} image tag to ${{ github.sha }} [skip ci]"
+          # Multiple services' pipelines push to main in parallel from the same
+          # triggering commit, so a plain push here races and loses when another
+          # service's update-helm job lands first. Rebase and retry instead of
+          # failing outright.
+          for i in 1 2 3 4 5; do
+            git push && exit 0
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo "Failed to push after 5 retries" >&2
+          exit 1

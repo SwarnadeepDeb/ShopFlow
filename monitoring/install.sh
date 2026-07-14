@@ -28,16 +28,23 @@ helm upgrade --install elasticsearch elastic/elasticsearch \
   --values efk/elasticsearch/values.yaml \
   --wait --timeout 10m
 
+kubectl apply -f efk/fluentd/fluentd-configmap.yaml
+
 helm upgrade --install fluentd fluent/fluentd \
   --namespace logging \
   --values efk/fluentd/values.yaml \
   --wait
 
-kubectl apply -f efk/fluentd/fluentd-configmap.yaml
+kubectl apply -f efk/kibana/dummy-secrets.yaml
 
+# --no-hooks: the chart's pre-install token-creation job hardcodes an https
+# request to Elasticsearch with no way to configure http, so it can never
+# succeed against our plain-HTTP ES. See efk/kibana/dummy-secrets.yaml for
+# the placeholder secrets that replace what that hook would have created.
 helm upgrade --install kibana elastic/kibana \
   --namespace logging \
   --values efk/kibana/values.yaml \
+  --no-hooks \
   --wait
 
 echo ""

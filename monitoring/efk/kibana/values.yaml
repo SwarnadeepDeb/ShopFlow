@@ -3,7 +3,18 @@
 
 imageTag: "8.11.1"
 
-elasticsearchHosts: "http://elasticsearch-master.logging.svc.cluster.local:9200"
+elasticsearchHosts: "http://shopflow-logs-master.logging.svc.cluster.local:9200"
+
+## The chart's pre-install/post-delete hook jobs mount this secret
+## unconditionally (no template guard, even though Elasticsearch runs plain
+## HTTP with createCert: false upstream) — points at a dummy secret applied
+## separately via dummy-secrets.yaml; its contents are never read.
+elasticsearchCertificateSecret: kibana-dummy-certs
+
+## Chart defaults to "elasticsearch-master-credentials", but our ES cluster
+## uses clusterName/nodeGroup (shopflow-logs/master), which changes both the
+## service name and generated secret name to the shopflow-logs-master- prefix.
+elasticsearchCredentialSecret: shopflow-logs-master-credentials
 
 replicas: 1
 
@@ -19,11 +30,9 @@ resources:
 kibanaConfig:
   kibana.yml: |
     server.host: "0.0.0.0"
-    elasticsearch.hosts: ["http://elasticsearch-master.logging.svc.cluster.local:9200"]
+    elasticsearch.hosts: ["http://shopflow-logs-master.logging.svc.cluster.local:9200"]
     xpack.security.enabled: false
     xpack.encryptedSavedObjects.encryptionKey: "shopflow-kibana-encryption-key-32c"
-    ## Default index pattern
-    kibana.defaultAppId: "discover"
     ## Increase timeout for large queries
     elasticsearch.requestTimeout: 90000
 

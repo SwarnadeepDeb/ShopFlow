@@ -25,14 +25,16 @@ install-efk: ## Install Elasticsearch + Fluentd + Kibana
 	  --namespace logging \
 	  --values efk/elasticsearch/values.yaml \
 	  --wait --timeout 10m
+	kubectl apply -f efk/fluentd/fluentd-configmap.yaml
 	helm upgrade --install fluentd fluent/fluentd \
 	  --namespace logging \
 	  --values efk/fluentd/values.yaml \
 	  --wait
-	kubectl apply -f efk/fluentd/fluentd-configmap.yaml
+	kubectl apply -f efk/kibana/dummy-secrets.yaml
 	helm upgrade --install kibana elastic/kibana \
 	  --namespace logging \
 	  --values efk/kibana/values.yaml \
+	  --no-hooks \
 	  --wait
 	@echo "EFK stack installed."
 

@@ -8,24 +8,15 @@ image:
   repository: fluent/fluentd-kubernetes-daemonset
   tag: v1.16-debian-elasticsearch8-1
 
-## Mount host log directories
+## Host log directories (/var/log, /var/lib/docker/containers) are already
+## mounted by the chart's own mountDockerContainersDirectory default (true) —
+## declaring them again here collides with the chart's own volume names.
 volumes:
-  - name: varlog
-    hostPath:
-      path: /var/log
-  - name: varlibdockercontainers
-    hostPath:
-      path: /var/lib/docker/containers
   - name: fluentd-config
     configMap:
       name: fluentd-config
 
 volumeMounts:
-  - name: varlog
-    mountPath: /var/log
-  - name: varlibdockercontainers
-    mountPath: /var/lib/docker/containers
-    readOnly: true
   - name: fluentd-config
     mountPath: /fluentd/etc/fluent.conf
     subPath: fluent.conf
@@ -60,7 +51,7 @@ tolerations:
 ## Environment variables for Elasticsearch endpoint
 env:
   - name: FLUENT_ELASTICSEARCH_HOST
-    value: "elasticsearch-master.logging.svc.cluster.local"
+    value: "shopflow-logs-master.logging.svc.cluster.local"
   - name: FLUENT_ELASTICSEARCH_PORT
     value: "9200"
   - name: FLUENT_ELASTICSEARCH_SCHEME

@@ -1,6 +1,9 @@
 replicaCount: 1
 image:
   tag: "ab998ca6e53a1c1cfb51f87fc18b859c48e8a1e2"
+## Temporary public exposure for a demo — revert to ClusterIP afterward.
+service:
+  type: LoadBalancer
 ingress:
   enabled: true
   hosts:

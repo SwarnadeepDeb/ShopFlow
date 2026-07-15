@@ -9,7 +9,7 @@ ingress:
         - path: /api/orders
           pathType: Prefix
 config:
-  DB_HOST: "RDS_ENDPOINT_FROM_TERRAFORM"
+  DB_HOST: "shopflow-dev-postgres.cifsu6igghrp.us-east-1.rds.amazonaws.com"
   NODE_ENV: "development"
 hpa:
   enabled: false

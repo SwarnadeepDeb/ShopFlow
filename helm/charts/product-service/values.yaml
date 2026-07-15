@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/shopflow/product-service
+  repository: 879717844084.dkr.ecr.us-east-1.amazonaws.com/shopflow/product-service
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -20,14 +20,14 @@ ingress:
 
 config:
   PORT: "3002"
-  DB_HOST: "postgres-host"
+  DB_HOST: "shopflow-dev-postgres.cifsu6igghrp.us-east-1.rds.amazonaws.com"
   DB_PORT: "5432"
   DB_NAME: "shopflow"
   DB_USER: "shopflow"
   NODE_ENV: "production"
 
 secret:
-  DB_PASSWORD: "changeme"
+  DB_PASSWORD: "swarnadeepterraform!879717844084"
 
 resources:
   requests:

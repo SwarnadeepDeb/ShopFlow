@@ -9,7 +9,7 @@ spec:
   description: ShopFlow microservices project
 
   sourceRepos:
-    - "https://github.com/YOUR_ORG/shopflow.git"
+    - "https://github.com/SwarnadeepDeb/ShopFlow.git"
 
   destinations:
     - namespace: shopflow

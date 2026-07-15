@@ -9,7 +9,7 @@ spec:
   project: shopflow
 
   source:
-    repoURL: https://github.com/YOUR_ORG/shopflow.git
+    repoURL: https://github.com/SwarnadeepDeb/ShopFlow.git
     targetRevision: main
     path: gitops/argocd/applications
 

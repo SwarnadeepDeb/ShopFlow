@@ -10,8 +10,9 @@
 {{- if .Values.ingress.enabled }}
   Ingress path:
   {{- range .Values.ingress.hosts }}
+  {{- $host := .host }}
   {{- range .paths }}
-    http://{{ $.Values.ingress.hosts | first | get "host" }}{{ .path }}
+    http://{{ $host }}{{ .path }}
   {{- end }}
   {{- end }}
 {{- end }}

@@ -16,6 +16,10 @@ spec:
       server: https://kubernetes.default.svc
     - namespace: argocd
       server: https://kubernetes.default.svc
+    ## Each service's ServiceMonitor (serviceMonitor.enabled: true) targets
+    ## the monitoring namespace so Prometheus Operator picks it up there.
+    - namespace: monitoring
+      server: https://kubernetes.default.svc
 
   clusterResourceWhitelist:
     - group: ""
@@ -43,6 +47,8 @@ spec:
       kind: ApplicationSet
     - group: "argoproj.io"
       kind: Application
+    - group: "monitoring.coreos.com"
+      kind: ServiceMonitor
 
   roles:
     - name: developer

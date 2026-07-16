@@ -18,6 +18,9 @@ helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheu
   --namespace monitoring \
   --values prometheus/values.yaml \
   --wait --timeout 10m
+kubectl apply -f prometheus/rules/service-alerts.yaml
+kubectl apply -f prometheus/rules/infra-alerts.yaml
+kubectl apply -f grafana/dashboards/configmap.yaml
 
 echo ""
 echo "==> [2/4] Installing EFK Stack (Elasticsearch + Fluentd + Kibana)"

@@ -1,0 +1,279 @@
+apiVersion: v1
+data:
+  services-overview.json: |
+    {
+      "__inputs": [],
+      "__requires": [
+        { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+        { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" }
+      ],
+      "annotations": { "list": [] },
+      "description": "ShopFlow — Service RED Metrics (Rate, Errors, Duration)",
+      "editable": true,
+      "graphTooltip": 1,
+      "id": null,
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 1,
+          "title": "Request Rate",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": { "lineWidth": 2 },
+              "unit": "reqps"
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+          "id": 2,
+          "options": { "legend": { "displayMode": "table", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{namespace=\"shopflow\"}[5m])) by (service)",
+              "legendFormat": "{{ service }}",
+              "refId": "A"
+            }
+          ],
+          "title": "Request Rate by Service (req/s)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": { "lineWidth": 2 },
+              "unit": "percentunit",
+              "max": 1,
+              "min": 0
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+          "id": 3,
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{namespace=\"shopflow\",status=~\"5..\"}[5m])) by (service) / sum(rate(http_requests_total{namespace=\"shopflow\"}[5m])) by (service)",
+              "legendFormat": "{{ service }}",
+              "refId": "A"
+            }
+          ],
+          "title": "Error Rate by Service",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+          "id": 4,
+          "title": "Latency",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": { "lineWidth": 2 },
+              "unit": "s"
+            }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+          "id": 5,
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{namespace=\"shopflow\"}[5m])) by (le, service))",
+              "legendFormat": "p50 {{ service }}",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"shopflow\"}[5m])) by (le, service))",
+              "legendFormat": "p95 {{ service }}",
+              "refId": "B"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace=\"shopflow\"}[5m])) by (le, service))",
+              "legendFormat": "p99 {{ service }}",
+              "refId": "C"
+            }
+          ],
+          "title": "Request Duration Percentiles",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": { "unit": "s", "color": { "mode": "thresholds" },
+              "thresholds": {
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "yellow", "value": 0.5 },
+                  { "color": "red", "value": 1.0 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+          "id": 6,
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "horizontal" },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"shopflow\"}[5m])) by (le, service))",
+              "legendFormat": "{{ service }}",
+              "refId": "A"
+            }
+          ],
+          "title": "P95 Latency per Service (current)",
+          "type": "bargauge"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+          "id": 7,
+          "title": "Pod Health",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "green", "value": 1 }
+                ]
+              },
+              "mappings": [
+                { "type": "value", "options": { "0": { "text": "Down" }, "1": { "text": "Up" } } }
+              ]
+            }
+          },
+          "gridPos": { "h": 6, "w": 8, "x": 0, "y": 19 },
+          "id": 8,
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+          "targets": [
+            {
+              "expr": "up{namespace=\"shopflow\"}",
+              "legendFormat": "{{ pod }}",
+              "refId": "A"
+            }
+          ],
+          "title": "Service Up/Down",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+          },
+          "gridPos": { "h": 6, "w": 8, "x": 8, "y": 19 },
+          "id": 9,
+          "targets": [
+            {
+              "expr": "kube_deployment_status_available_replicas{namespace=\"shopflow\"}",
+              "legendFormat": "{{ deployment }}",
+              "refId": "A"
+            }
+          ],
+          "title": "Available Replicas",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": { "unit": "short", "color": { "mode": "palette-classic" } }
+          },
+          "gridPos": { "h": 6, "w": 8, "x": 16, "y": 19 },
+          "id": 10,
+          "targets": [
+            {
+              "expr": "rate(kube_pod_container_status_restarts_total{namespace=\"shopflow\"}[15m]) * 60 * 15",
+              "legendFormat": "{{ pod }}",
+              "refId": "A"
+            }
+          ],
+          "title": "Pod Restarts (15m)",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
+          "id": 11,
+          "title": "Resource Usage",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": { "unit": "percentunit", "min": 0, "max": 1 }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
+          "id": 12,
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"shopflow\",container!=\"\"}[5m])) by (pod) / sum(kube_pod_container_resource_limits{namespace=\"shopflow\",resource=\"cpu\",container!=\"\"}) by (pod)",
+              "legendFormat": "{{ pod }}",
+              "refId": "A"
+            }
+          ],
+          "title": "CPU Usage % of Limit",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "fieldConfig": {
+            "defaults": { "unit": "percentunit", "min": 0, "max": 1 }
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
+          "id": 13,
+          "targets": [
+            {
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"shopflow\",container!=\"\"}) by (pod) / sum(kube_pod_container_resource_limits{namespace=\"shopflow\",resource=\"memory\",container!=\"\"}) by (pod)",
+              "legendFormat": "{{ pod }}",
+              "refId": "A"
+            }
+          ],
+          "title": "Memory Usage % of Limit",
+          "type": "timeseries"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "tags": ["shopflow", "services", "red-metrics"],
+      "templating": {
+        "list": [
+          {
+            "current": {},
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "definition": "label_values(http_requests_total{namespace=\"shopflow\"}, service)",
+            "label": "Service",
+            "name": "service",
+            "options": [],
+            "query": "label_values(http_requests_total{namespace=\"shopflow\"}, service)",
+            "refresh": 2,
+            "sort": 1,
+            "type": "query",
+            "multi": true,
+            "includeAll": true
+          }
+        ]
+      },
+      "time": { "from": "now-1h", "to": "now" },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "ShopFlow — Services Overview",
+      "uid": "shopflow-services-overview",
+      "version": 1
+    }
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  labels:
+    grafana_dashboard: "1"
+  name: grafana-dashboard-services-overview
+  namespace: monitoring

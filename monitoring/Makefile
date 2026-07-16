@@ -17,6 +17,7 @@ install-prometheus: ## Install Prometheus + Grafana + AlertManager
 	  --wait --timeout 10m
 	kubectl apply -f prometheus/rules/service-alerts.yaml
 	kubectl apply -f prometheus/rules/infra-alerts.yaml
+	kubectl apply -f grafana/dashboards/configmap.yaml
 	@echo "Prometheus stack installed."
 
 install-efk: ## Install Elasticsearch + Fluentd + Kibana

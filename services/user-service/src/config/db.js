@@ -6,6 +6,9 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'shopflow',
   user: process.env.DB_USER || 'shopflow',
   password: process.env.DB_PASSWORD,
+  ssl: process.env.DB_HOST && process.env.DB_HOST !== 'localhost'
+    ? { rejectUnauthorized: false }
+    : false,
 });
 
 module.exports = pool;

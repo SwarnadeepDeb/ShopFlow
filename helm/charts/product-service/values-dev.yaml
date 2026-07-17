@@ -1,6 +1,6 @@
 replicaCount: 1
 image:
-  tag: "f57d8745711f409a009dcb38e875a5ea6ccee373"
+  tag: "716ad7b0fad226136f3f810538b814eadc9053ef"
 ingress:
   enabled: true
   hosts:
